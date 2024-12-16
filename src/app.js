@@ -25,7 +25,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
-// Mount auth routes
 app.use("/auth", authRoutes);
 
 module.exports = app;

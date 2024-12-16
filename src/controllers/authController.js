@@ -30,6 +30,8 @@ const authController = {
   register: async (req, res) => {
     const { email, password, name } = req.body;
 
+    console.warn("aqui");
+
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) {
