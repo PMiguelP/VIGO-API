@@ -12,4 +12,8 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+app.get("/", (req, res) => {
+  res.status(200).json("Welcome, your API is working!");
+});
+
 module.exports = app;
