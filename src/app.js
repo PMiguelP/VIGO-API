@@ -1,10 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const authRoutes = require("./routes/authRoutes");
-
-dotenv.config();
 
 const app = express();
 
@@ -28,6 +25,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// Mount auth routes
 app.use("/auth", authRoutes);
 
 module.exports = app;

@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
-const prisma = require("../prisma/prisma");
+const { PrismaClient } = require("@prisma/client");
+
+const prisma = new PrismaClient();
 
 const generateAccessToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "5m" });
@@ -19,4 +21,7 @@ const generateRefreshToken = async (userId) => {
   return refreshToken;
 };
 
-module.exports = { generateAccessToken, generateRefreshToken };
+module.exports = {
+  generateAccessToken,
+  generateRefreshToken,
+};
