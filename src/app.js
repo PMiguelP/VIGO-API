@@ -9,6 +9,10 @@ app.use(corsMiddleware);
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/auth", authRoutes);
+const apiRouter = express.Router();
+
+apiRouter.use("/auth", authRoutes);
+
+app.use("/api", apiRouter);
 
 module.exports = app;
