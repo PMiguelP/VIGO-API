@@ -1,12 +1,11 @@
-const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
-const { generateAccessToken, generateRefreshToken } = require("../utils/tokenUtils");
-
-const prisma = new PrismaClient();
-const isProduction = process.env.NODE_ENV === "production";
+const jwt = require("jsonwebtoken");
+const prisma = require("../config/prisma");
+const config = require("../config/environment");
+const { generateAccessToken, generateRefreshToken } = require("../utils/token");
 
 const authController = {
-  checkAuth: async (req, res) => {
+  async check(req, res) {
     try {
       const user = await prisma.user.findUnique({ where: { id: req.userId } });
 
@@ -27,10 +26,8 @@ const authController = {
     }
   },
 
-  register: async (req, res) => {
+  async register(req, res) {
     const { email, password, name } = req.body;
-
-    console.warn("aqui");
 
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -49,7 +46,7 @@ const authController = {
     }
   },
 
-  login: async (req, res) => {
+  async login(req, res) {
     const { email, password } = req.body;
 
     try {
@@ -68,15 +65,15 @@ const authController = {
 
       res.cookie("token", accessToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "None" : "Lax",
+        secure: config.isProduction,
+        sameSite: config.isProduction ? "None" : "Lax",
         maxAge: 5 * 60 * 1000,
       });
 
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "None" : "Lax",
+        secure: config.isProduction,
+        sameSite: config.isProduction ? "None" : "Lax",
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
@@ -86,14 +83,14 @@ const authController = {
     }
   },
 
-  refreshToken: async (req, res) => {
+  async refresh(req, res) {
     const refreshToken = req.cookies.refreshToken;
     if (!refreshToken) {
       return res.status(401).json({ message: "Refresh token is required." });
     }
 
     try {
-      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret);
       const storedToken = await prisma.refreshToken.findUnique({
         where: { token: refreshToken },
       });
@@ -109,15 +106,15 @@ const authController = {
 
       res.cookie("token", newAccessToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "None" : "Lax",
+        secure: config.isProduction,
+        sameSite: config.isProduction ? "None" : "Lax",
         maxAge: 5 * 60 * 1000,
       });
 
       res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
-        secure: isProduction,
-        sameSite: isProduction ? "None" : "Lax",
+        secure: config.isProduction,
+        sameSite: config.isProduction ? "None" : "Lax",
         maxAge: 30 * 24 * 60 * 60 * 1000,
       });
 
@@ -127,7 +124,7 @@ const authController = {
     }
   },
 
-  logout: async (req, res) => {
+  async logout(req, res) {
     const refreshToken = req.cookies.refreshToken;
 
     if (refreshToken) {

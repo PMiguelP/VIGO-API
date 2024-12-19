@@ -1,18 +1,11 @@
-const dotenv = require("dotenv");
 const app = require("./src/app");
+const config = require("./src/config/environment");
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
-
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-  });
-}
+app.listen(config.port, () => {
+  console.log(`Server running at http://localhost:${config.port}`);
+});
 
 app.get("/", (req, res) => {
   res.status(200).json("Welcome, your API is working!");
+  res.status(400).json("A api esta fodida");
 });
-
-module.exports = app;
