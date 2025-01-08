@@ -67,7 +67,7 @@ const authController = {
         httpOnly: true,
         secure: config.isProduction,
         sameSite: config.isProduction ? "None" : "Lax",
-        maxAge: 5 * 60 * 1000,
+        maxAge: 30 * 1000,
       });
 
       res.cookie("refreshToken", refreshToken, {
@@ -108,7 +108,7 @@ const authController = {
         httpOnly: true,
         secure: config.isProduction,
         sameSite: config.isProduction ? "None" : "Lax",
-        maxAge: 5 * 60 * 1000,
+        maxAge: 30 * 1000,
       });
 
       res.cookie("refreshToken", newRefreshToken, {

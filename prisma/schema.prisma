@@ -7,23 +7,198 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        Int             @id @default(autoincrement())
-  email     String          @unique
-  password  String
-  name      String
-  profilePicture String?
-  createdAt DateTime        @default(now())
-  refreshTokens RefreshToken[]
+enum UploadType {
+  PROFILE_PICTURE
+  TICKET_PDF
+  CHECKLIST_ITEM_IMAGE
 }
 
+enum ChecklistItemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum EventParticipantStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  INVITED
+}
+
+enum EventParticipantRole {
+  PARTICIPANT
+  ORGANIZER
+  CO_ORGANIZER
+}
+
+enum CommentType {
+  DESTINY
+  CHECKLIST_ITEM
+}
+
+model User {
+  id                String           @id @default(uuid())
+  name              String
+  email             String           @unique
+  password          String
+  profilePictureUrl String?
+  
+  refreshTokens     RefreshToken[]
+  events            Event[]
+  eventParticipants EventParticipant[]
+  uploads           Upload[]
+  comments          Comment[]
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @default(now()) @updatedAt  // Add this default value
+
+  @@index([email])
+}
+
+
 model RefreshToken {
-  id         Int       @id @default(autoincrement())
-  token      String    @unique
-  expiresAt  DateTime
-  createdAt  DateTime  @default(now())
-  ipAddress  String? 
-  deviceInfo String? 
-  userId     Int
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  token       String    @unique
+  expiresAt   DateTime
+  
+  createdAt   DateTime  @default(now())
+  ipAddress   String?
+  deviceInfo  String?
+
+  @@index([userId])
+}
+
+model Event {
+  id          String            @id @default(uuid())
+  name        String
+  description String?
+  destiny     String
+  startDate   DateTime
+  endDate     DateTime
+  
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdById String
+  
+  shareLink   String            @default("")
+  
+  itineraries Itinerary[]
+  participants EventParticipant[]
+  comments    Comment[]
+
+  createdAt   DateTime          @default(now())
+
+  @@index([createdById])
+}
+
+model Itinerary {
+  id          String            @id @default(uuid())
+  event       Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  
+  checklists  Checklist[]
+
+  createdAt   DateTime          @default(now())
+
+  @@index([eventId])
+}
+
+model Checklist {
+  id            String            @id @default(uuid())
+  itinerary     Itinerary         @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+  itineraryId   String
+  name          String
+  description   String?
+  
+  checklistItems ChecklistItem[]
+
+  createdAt     DateTime          @default(now())
+
+  @@index([itineraryId])
+}
+
+model ChecklistItem {
+  id              String                @id @default(uuid())
+  checklist       Checklist             @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  checklistId     String
+  name            String
+  description     String?
+  status          ChecklistItemStatus   @default(NOT_STARTED)
+  
+  locationName    String?
+  locationAddress String?
+  
+  latitude       Decimal?               @db.Decimal(10, 8)
+  longitude      Decimal?               @db.Decimal(11, 8)
+  estimatedTime  Int?
+  
+  uploads        Upload[]
+  comments       Comment[]
+
+  createdAt       DateTime              @default(now())
+
+  @@index([checklistId])
+}
+
+model EventParticipant {
+  id        String                 @id @default(uuid())
+  event     Event                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  status    EventParticipantStatus @default(PENDING)
+  role      EventParticipantRole   @default(PARTICIPANT)
+  
+  joinedAt  DateTime               @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model Upload {
+  id                String          @id @default(uuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  uploadType        UploadType
+  fileUrl           String
+  
+  profilePictureId  String?
+  ticketPdfId       String?
+  
+  checklistItem     ChecklistItem?  @relation(fields: [checklistItemId], references: [id], onDelete: SetNull)
+  checklistItemId   String?
+  
+  description       String?
+  uploadedAt        DateTime        @default(now())
+
+  @@index([userId])
+  @@index([checklistItemId])
+}
+
+model Comment {
+  id                String          @id @default(uuid())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+  commentType       CommentType
+  
+  event             Event?          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId           String?
+  
+  checklistItem     ChecklistItem?  @relation(fields: [checklistItemId], references: [id], onDelete: Cascade)
+  checklistItemId   String?
+  
+  comment           String
+  
+  createdAt         DateTime        @default(now())
+
+  @@index([userId])
+  @@index([eventId])
+  @@index([checklistItemId])
 }
