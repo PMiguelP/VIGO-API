@@ -38,24 +38,37 @@ enum CommentType {
 }
 
 model User {
-  id                String           @id @default(uuid())
-  name              String
-  email             String           @unique
-  password          String
-  profilePictureUrl String?
-  
-  refreshTokens     RefreshToken[]
-  events            Event[]
-  eventParticipants EventParticipant[]
-  uploads           Upload[]
-  comments          Comment[]
+  id                        String                 @id @default(uuid())
+  name                      String
+  email                     String                 @unique
+  password                  String
+  profilePictureUrl         String?                // Optional URL for custom profile picture
+  presetProfilePicture      PresetProfilePicture?  @relation(fields: [presetProfilePictureId], references: [id])
+  presetProfilePictureId    String?                // Foreign key to PresetProfilePicture
 
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @default(now()) @updatedAt  // Add this default value
+  refreshTokens             RefreshToken[]
+  events                    Event[]
+  eventParticipants         EventParticipant[]
+  uploads                   Upload[]
+  comments                  Comment[]
+
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @default(now()) @updatedAt
 
   @@index([email])
 }
 
+model PresetProfilePicture {
+  id            String     @id @default(uuid())
+  url           String     // URL for the picture
+  description   String?    // Optional description of the picture
+  category      String?    // Optional category for organizing pictures
+
+  users         User[]     // Users selecting this preset picture
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+}
 
 model RefreshToken {
   id          String    @id @default(uuid())
