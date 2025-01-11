@@ -1,18 +1,12 @@
 const express = require("express");
-const uploadController = require("./controllers/uploadController");
-
+const {
+  uploadPhotoToBlob,
+  uploadMiddleware,
+} = require("../controllers/upload.controller");
+const authMiddleware = require("../middlewares/auth.middleware"); // Adjust the path as needed
 const router = express.Router();
 
-// Get pre-seeded profile pictures
-router.get("/profile-pictures", uploadController.getPreseededProfilePictures);
-
-// Select a profile picture for a user
-router.post("/profile-pictures/select", uploadController.selectProfilePicture);
-
-// Upload an image for a checklist item
-router.post(
-  "/checklist-items/:checklistItemId/upload",
-  uploadController.uploadChecklistItemImage
-);
+// File upload route with authentication middleware
+router.post("/upload-photo", authMiddleware, uploadMiddleware, uploadPhotoToBlob);
 
 module.exports = router;

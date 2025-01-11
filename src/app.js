@@ -8,6 +8,7 @@ const itineraryRoutes = require("./routes/itineraryRoutes");
 const checklistRoutes = require("./routes/checklistRoutes");
 const checklistItemRoutes = require("./routes/checklistItemRoutes");
 const commentRoutes = require("./routes/commentsRoutes");
+const uploadRoutes = require("./routes/upload.routes");
 const app = express();
 
 app.use(corsMiddleware);
@@ -23,6 +24,7 @@ apiRouter.use("/teste", itineraryRoutes);
 apiRouter.use("/checklist", checklistRoutes);
 apiRouter.use("/item", checklistItemRoutes);
 apiRouter.use("/comment", commentRoutes);
+apiRouter.use("/upload", uploadRoutes);
 
 app.use("/api", apiRouter);
 

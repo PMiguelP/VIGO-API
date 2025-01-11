@@ -3,7 +3,7 @@ const prisma = require("../config/prisma");
 const config = require("../config/environment");
 
 const generateAccessToken = (userId) => {
-  return jwt.sign({ id: userId }, config.jwtSecret, { expiresIn: "5m" });
+  return jwt.sign({ id: userId }, config.jwtSecret, { expiresIn: "7d" });
 };
 
 const generateRefreshToken = async (userId) => {

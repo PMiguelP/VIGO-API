@@ -31,7 +31,7 @@ router.delete("/delete/:id", authMiddleware, isEventOwner, deleteEvent);
 router.put("/:id/share", authMiddleware, isEventOwner, updateShareLink);
 
 // Participant Routes (Event participants management)
-router.get("/:id/participants", listParticipants); // Get participants for an event
-router.patch("/:id/respond", respondToInvitation); // Respond to invitation (accept/decline)
+router.get("/:id/participants", authMiddleware, listParticipants); // Get participants for an event
+router.post("/:id/respond", authMiddleware, respondToInvitation); // Respond to invitation (accept/decline)
 
 module.exports = router;

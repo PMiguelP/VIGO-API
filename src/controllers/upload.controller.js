@@ -1,104 +1,83 @@
-const axios = require("axios");
 const { PrismaClient } = require("@prisma/client");
+const { put } = require("@vercel/blob");
+const multer = require("multer");
+
+// Initialize Prisma Client
 const prisma = new PrismaClient();
 
-const BLOB_API_URL = "https://vercel.blob/api/v1/blobs";
-const BLOB_READ_WRITE_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+// Set up multer for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
 
-exports.getPreseededProfilePictures = async (req, res) => {
-  try {
-    const preseededUrls = Array.from({ length: 20 }, (_, i) => ({
-      id: `profile-picture-${i + 1}`,
-      url: `https://vercel.blob/storage/profile-pictures/image-${i + 1}.jpg`,
-      description: `Profile picture ${i + 1}`,
-    }));
+// Controller function to upload a photo
+const uploadPhotoToBlob = async (req, res) => {
+  const file = req.file; // The file from Multer middleware
+  const { checklistItemId } = req.body; // The checklist item ID
 
-    res.status(200).json(preseededUrls);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to fetch pre-seeded profile pictures." });
+  // Check if file or checklistItemId is missing
+  if (!file) {
+    return res.status(400).json({ error: "No file provided." });
   }
-};
-
-exports.selectProfilePicture = async (req, res) => {
-  const { userId, profilePictureUrl } = req.body;
-
-  if (!userId || !profilePictureUrl) {
-    return res
-      .status(400)
-      .json({ error: "User ID and Profile Picture URL are required." });
-  }
-
-  try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { profilePictureUrl },
-    });
-
-    res.status(200).json({ message: "Profile picture updated successfully." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to update profile picture." });
-  }
-};
-
-// Upload an image for a checklist item
-exports.uploadChecklistItemImage = async (req, res) => {
-  const { checklistItemId } = req.params;
 
   if (!checklistItemId) {
     return res.status(400).json({ error: "Checklist item ID is required." });
   }
 
-  try {
-    const contentType = req.headers["content-type"];
-    const chunks = [];
+  // Get the user ID from the middleware
+  const userId = req.userId; // Extract userId set by authMiddleware
 
-    // Collect the data chunks
-    req.on("data", (chunk) => {
-      chunks.push(chunk);
+  try {
+    // Validate user existence
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId },
     });
 
-    req.on("end", async () => {
-      const fileBuffer = Buffer.concat(chunks);
+    if (!userExists) {
+      return res.status(404).json({ error: "User not found." });
+    }
 
-      // Upload to Vercel Blob
-      const uploadResponse = await axios.post(
-        `${BLOB_API_URL}/write`,
-        {
-          fileName: `checklist-item-${checklistItemId}.jpg`,
-          data: fileBuffer.toString("base64"),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${BLOB_READ_WRITE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+    // Validate checklist item existence
+    const checklistItemExists = await prisma.checklistItem.findUnique({
+      where: { id: checklistItemId },
+    });
 
-      const { url } = uploadResponse.data;
+    if (!checklistItemExists) {
+      return res.status(404).json({ error: "Checklist item not found." });
+    }
 
-      // Update the checklist item in the database
-      await prisma.checklistItem.update({
-        where: { id: checklistItemId },
-        data: {
-          uploads: {
-            create: {
-              uploadType: "CHECKLIST_ITEM_IMAGE",
-              fileUrl: url,
-              description: `Image for checklist item ${checklistItemId}`,
-            },
-          },
-        },
-      });
+    // Step 1: Upload the file to Vercel Blob
+    const blobResult = await put(file.originalname, file.buffer, {
+      access: "public", // Make the file publicly accessible
+    });
 
-      res
-        .status(200)
-        .json({ message: "Image uploaded and linked to checklist item.", url });
+    // Extract the public URL of the uploaded file
+    const fileUrl = blobResult.url;
+
+    // Step 2: Save the file URL in the database
+    const uploadRecord = await prisma.upload.create({
+      data: {
+        userId,
+        checklistItemId,
+        uploadType: "CHECKLIST_ITEM_IMAGE",
+        fileUrl,
+      },
+    });
+
+    // Step 3: Respond with the uploaded file's URL
+    return res.status(201).json({
+      message: "File uploaded successfully.",
+      upload: uploadRecord,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to upload image for the checklist item." });
+    console.error("Error uploading file:", error);
+    return res.status(500).json({ error: "File upload failed." });
   }
+};
+
+// Middleware for handling file uploads
+const uploadMiddleware = upload.single("file");
+
+// Export the function and middleware
+module.exports = {
+  uploadPhotoToBlob,
+  uploadMiddleware,
 };
